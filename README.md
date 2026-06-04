@@ -8,22 +8,11 @@ An agentic web app that turns a company's public footprint into grounded outboun
 
 Analyze a company site to infer value proposition and ICP, with per-dimension provenance.
 
-<video src="docs/demos/mode1.mp4" controls width="100%">
-  <a href="docs/demos/mode1.mp4">Mode 1 demo</a>
-</video>
 
 ### Mode 2 — Target Outbound
 
 Research a target against the sender's ICP, score fit, draft two distinct-angle emails, and assemble a verified claim map.
 
-<!-- Replace this block after uploading docs/demos/mode-2-target-outbound.mp4 -->
-<!--
-<video src="docs/demos/mode-2-target-outbound.mp4" controls width="100%">
-  <a href="docs/demos/mode-2-target-outbound.mp4">Mode 2 demo</a>
-</video>
--->
-
-> **Placeholder:** `docs/demos/mode-2-target-outbound.mp4`
 
 ## Quick start
 
@@ -86,7 +75,7 @@ Cross-cutting: Guardrails (input/SSRF · injection screen · output schema/polic
 
 ## Token usage & limits
 
-A full Mode 2 run targets ~25k tokens (50k hard budget). Every run streams a `meta` event with turns, LLM/scrape/embed counts, tokens, cost estimate, verified-claims ratio, and wall-clock — rendered in the run-stats bar. Hard ceilings: **180s** wall-clock and the token budget both force a graceful `finish` with partial-but-valid results.
+A full Mode 2 run targets ~25k tokens (60k hard budget). Every run streams a `meta` event with turns, LLM/scrape/embed counts, tokens, cost estimate, verified-claims ratio, and wall-clock — rendered in the run-stats bar. Hard ceilings: **180s** wall-clock and the token budget both force a graceful `finish` with partial-but-valid results.
 
 ## Evals
 
