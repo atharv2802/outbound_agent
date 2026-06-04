@@ -8,10 +8,14 @@ An agentic web app that turns a company's public footprint into grounded outboun
 
 Analyze a company site to infer value proposition and ICP, with per-dimension provenance.
 
+https://github.com/user-attachments/assets/ae74077e-1293-4474-ab5c-43034294e9fa
+
 
 ### Mode 2 — Target Outbound
 
 Research a target against the sender's ICP, score fit, draft two distinct-angle emails, and assemble a verified claim map.
+
+https://github.com/user-attachments/assets/438488e5-beb3-42a3-8127-5508e1d8e2ff
 
 
 ## Quick start
@@ -84,6 +88,8 @@ npm run eval
 ```
 
 Replays golden cases (cached pages under `evals/golden/`) through the real agent runtime — deterministic offline scraping, real LLM reasoning + judge. Metrics: groundedness, ICP coverage, schema validity, angle distinctiveness, LLM-judge email rubric, and token/latency budget. Reports land in `evals/results/`.
+
+<img width="684" height="414" alt="Screenshot 2026-06-04 at 7 06 06 AM" src="https://github.com/user-attachments/assets/63db1804-fc0c-49cf-87c6-5e16b5874336" />
 
 ## Project layout
 
