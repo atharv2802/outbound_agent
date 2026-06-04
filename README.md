@@ -1,33 +1,55 @@
 # Outbound Strategy Engine
 
-> An agentic web app that turns a company's public footprint into grounded outbound sales strategy. A ReAct agent researches the web in real time, retrieves **snippets (not whole pages)**, and writes emails where **every claim is bound to verified evidence**.
+An agentic web app that turns a company's public footprint into grounded outbound sales strategy. A ReAct agent researches the web in real time, retrieves **snippets (not whole pages)**, and writes emails where **every claim is bound to verified evidence**.
+
+## Demo
+
+### Mode 1 — Sender Analysis
+
+Analyze a company site to infer value proposition and ICP, with per-dimension provenance.
+
+<video src="docs/demos/mode1.mp4" controls width="100%">
+  <a href="docs/demos/mode1.mp4">Mode 1 demo</a>
+</video>
+
+### Mode 2 — Target Outbound
+
+Research a target against the sender's ICP, score fit, draft two distinct-angle emails, and assemble a verified claim map.
+
+<!-- Replace this block after uploading docs/demos/mode-2-target-outbound.mp4 -->
+<!--
+<video src="docs/demos/mode-2-target-outbound.mp4" controls width="100%">
+  <a href="docs/demos/mode-2-target-outbound.mp4">Mode 2 demo</a>
+</video>
+-->
+
+> **Placeholder:** `docs/demos/mode-2-target-outbound.mp4`
 
 ## Quick start
 
 ```bash
 npm install
-cp .env.example .env.local        # then add your OPENAI_API_KEY
-npm run dev                        # http://localhost:3000
+cp .env.example .env.local   # add your OPENAI_API_KEY
+npm run dev                  # http://localhost:3000
 ```
 
-Production:
+| Command | Purpose |
+|---|---|
+| `npm run build && npm start` | Production server (required for in-memory state reuse) |
+| `npm run eval` | Offline eval suite against golden fixtures |
+| `npm run typecheck` | TypeScript check |
+| `npm run lint` | ESLint |
 
-```bash
-npm run build && npm start
-```
-
-Evals:
-
-```bash
-npm run eval
-```
-
-See [`instruction.md`](./instruction.md) for the full, friendly setup guide (getting a key, example inputs, costs, caveats, troubleshooting).
+Full setup, example inputs, costs, and troubleshooting: [`instruction.md`](./instruction.md).
 
 ## Two modes
 
-1. **Sender Analysis** — point it at a company site (`artisan.co`). The agent explores, retrieves evidence, and infers a value proposition + ICP with per-dimension provenance. The result is a `SenderProfile`, persisted by domain.
-2. **Target Outbound** — `artisan.co → ramp.com`. The agent researches the target against the sender's ICP, scores fit per dimension, selects two **distinct-type** angles, drafts two emails, and assembles a **verified claim map**. Mode 2 reuses a cached `SenderProfile` or runs Mode 1 inline first — it's always self-sufficient.
+| Mode | Input | Output |
+|---|---|---|
+| **1 — Sender Analysis** | Company domain (e.g. `artisan.co`) | `SenderProfile`: value proposition + ICP with evidence-backed dimensions, persisted by domain |
+| **2 — Target Outbound** | Sender + target domains, recipient role (e.g. `artisan.co → ramp.com`) | Fit scorecard, two distinct-type email angles, verified claim map with bidirectional evidence links |
+
+Mode 2 reuses a cached `SenderProfile` or runs Mode 1 inline first — it is always self-sufficient.
 
 ## Architecture
 
@@ -54,30 +76,45 @@ Cross-cutting: Guardrails (input/SSRF · injection screen · output schema/polic
 
 ## Design decisions
 
-- **Retrieval, not context-stuffing (load-bearing).** Reasoning/writing LLM steps only ever see top-k retrieved snippets (each carrying `chunkId` + `sourceUrl`), never a raw page. This one decision delivers snippet grounding, the biggest token saving, and a claim map that can be *mechanically verified* rather than decorated.
-- **ReAct over a fixed pipeline.** The LLM decides what to research (URLs + retrieval queries); the retrieval layer decides which snippets answer it. Adapts to 404s and thin pages.
-- **Structured tool-calls, not hand-parsed JSON.** Each tool has a Zod-derived schema; the model returns a typed call. Removes the "bad agent JSON" failure class. `thought` is required on every call so the trace shows reasoning.
-- **One gateway for every external call.** LLM, embeddings, and scrapes share retry/timeout/rate-limit/circuit/ledger/trace. Embedding tokens are ledgered too, so indexing cost is never invisible.
-- **Grounding is a gate, not a suggestion.** `verify_claims` runs automatically inside `draft_email`'s output path (the agent can't skip it). Unsupported claims are stripped before display and listed transparently.
-- **Token efficiency, measured.** Retrieval + model routing (`gpt-4o-mini` for orchestration/verify, `gpt-4o` for synthesis/drafting) + context compression (old turns collapse to one line) + embedding cache + boilerplate stripping. The run-stats bar makes the savings legible.
-- **Jina Reader for scraping.** `https://r.jina.ai/{url}` → clean markdown, zero infra, no key.
+- **Retrieval, not context-stuffing.** Reasoning and writing steps only see top-k retrieved snippets (each with `chunkId` + `sourceUrl`), never raw pages. Grounding, token savings, and mechanical claim verification all follow from this.
+- **ReAct over a fixed pipeline.** The LLM decides what to research; the retrieval layer decides which snippets answer. Adapts to 404s and thin pages.
+- **Structured tool-calls.** Each tool has a Zod-derived schema; the model returns a typed call. `thought` is required on every call so the trace shows reasoning.
+- **One gateway for every external call.** LLM, embeddings, and scrapes share retry, timeout, rate-limit, circuit breaker, ledger, and trace.
+- **Grounding is a gate.** `verify_claims` runs automatically inside `draft_email` (the agent cannot skip it). Unsupported claims are stripped before display.
+- **Token efficiency, measured.** Model routing (`gpt-4o-mini` for orchestration/verify, `gpt-4o` for synthesis/drafting), context compression, embedding cache, and boilerplate stripping. The run-stats bar surfaces tokens, cost, and verified-claims ratio per run.
+- **Jina Reader for scraping.** `https://r.jina.ai/{url}` → clean markdown, no extra infra.
 
-## Token usage & run stats
+## Token usage & limits
 
-Model routing and retrieval keep a full Mode 2 run well under the 50k-token budget (target ~25k). Every run streams a `meta` event with turns, LLM calls, scrapes, embed calls, tokens (and a cost estimate from `lib/config.ts` pricing), verified-claims ratio, and wall-clock — rendered in the run-stats bar. Hard ceilings: **180s** wall-clock and the token budget both force a graceful `finish` with partial-but-valid results.
+A full Mode 2 run targets ~25k tokens (50k hard budget). Every run streams a `meta` event with turns, LLM/scrape/embed counts, tokens, cost estimate, verified-claims ratio, and wall-clock — rendered in the run-stats bar. Hard ceilings: **180s** wall-clock and the token budget both force a graceful `finish` with partial-but-valid results.
 
 ## Evals
 
-`npm run eval` replays golden cases (cached pages under `evals/golden/`) through the **real** agent runtime — deterministic, offline scraping; real LLM reasoning + judge. Metrics: groundedness (no ungrounded claim shipped), ICP coverage, schema validity, angle distinctiveness, LLM-judge email rubric (personalization/specificity/CTA/length), and token/latency budget. Regression thresholds gate the suite (groundedness honest-100%, schema valid, avg rubric ≥ 4.0, within budget).
+```bash
+npm run eval
+```
 
-## Honesty caveat
+Replays golden cases (cached pages under `evals/golden/`) through the real agent runtime — deterministic offline scraping, real LLM reasoning + judge. Metrics: groundedness, ICP coverage, schema validity, angle distinctiveness, LLM-judge email rubric, and token/latency budget. Reports land in `evals/results/`.
 
-State (cache, retrieval index, rate-limiter/circuit-breaker counters, `SenderProfile` store) is **in-memory and assumes a single long-lived process** — exactly the "local is fine" model in the brief. Run with `next start` (not edge). Horizontal scaling would move these to shared infra (see below).
+## Project layout
 
-## What I'd add next
+| Path | Contents |
+|---|---|
+| `app/` | Next.js app and API routes |
+| `components/`, `lib/hooks/` | UI and `useAgentStream` SSE hook |
+| `lib/` | Agent runtime, gateway, retrieval, guardrails, infra, types |
+| `lib/config.ts` | Model names and tunables |
+| `evals/` | Golden fixtures and eval harness |
+| `docs/demos/` | Demo screen recordings (`mode1.mp4`, Mode 2 pending) |
 
-- Redis-backed cache/index + a persistent vector store (pgvector / Qdrant).
-- Prompt A/B testing + a larger eval set with trend tracking.
-- LinkedIn / news enrichment as additional grounded sources.
-- Multi-tenant rate limiting and per-tenant budgets.
-- An observability dashboard over the trace spans.
+## Caveats
+
+State (cache, retrieval index, rate-limiter/circuit-breaker counters, `SenderProfile` store) is **in-memory and single-process**. Run with `next start` (not edge/serverless) for cross-request reuse; restarting clears everything.
+
+## Roadmap
+
+- Redis-backed cache/index + persistent vector store (pgvector / Qdrant)
+- Prompt A/B testing + larger eval set with trend tracking
+- LinkedIn / news enrichment as additional grounded sources
+- Multi-tenant rate limiting and per-tenant budgets
+- Observability dashboard over trace spans
