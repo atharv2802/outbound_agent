@@ -1,0 +1,10 @@
+{
+  "domain": "ramp.com",
+  "pages": {
+    "https://ramp.com": "# Ramp — The finance platform that helps you spend less\n\nRamp is the all-in-one finance platform combining corporate cards, expense management, bill payments, and accounting automation. Companies use Ramp to control spend, automate finance busywork, and close the books faster.\n\n## Built for fast-growing companies\nThousands of high-growth businesses — from startups to enterprises — run their finances on Ramp. Our customers span technology, ecommerce, healthcare, and professional services.\n\n## Scale\nRamp serves over 25,000 businesses and is one of the fastest-growing fintech companies in the US, with hundreds of employees across New York and other offices.\n\n## We're hiring\nRamp is scaling aggressively across go-to-market. We are actively hiring dozens of sales and revenue roles, including SDRs, Account Executives, and a growing sales leadership team, as we expand into new segments.",
+    "https://ramp.com/about": "# About Ramp\n\nRamp is a financial technology company headquartered in New York City. Founded in 2019, Ramp's mission is to save businesses time and money. The company has grown rapidly and now employs hundreds of people.\n\n## Go-to-market growth\nRamp's revenue organization is expanding quickly. The company runs a high-volume outbound sales motion and continues to invest heavily in pipeline generation and sales hiring.",
+    "https://ramp.com/careers": "# Careers at Ramp\n\nWe're growing fast. Ramp has dozens of open roles across Sales, Marketing, Engineering, and Operations.\n\n## Open sales roles\n- Sales Development Representative (multiple)\n- Account Executive, Mid-Market\n- Account Executive, Enterprise\n- Sales Manager\n- Head of Sales Development\n\nOur go-to-market team is one of the fastest-growing parts of the company as we scale outbound pipeline."
+  },
+  "expectedFitDirection": "high",
+  "mustCiteTerms": ["sales", "hiring", "outbound"]
+}
