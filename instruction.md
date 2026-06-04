@@ -94,7 +94,7 @@ This replays golden cases (`evals/golden/artisan.co.json`, `ramp.com.json`) thro
 
 ## 7. Costs, limits & caveats
 
-- **Cost:** a Mode 2 run is typically well under ~25k tokens (target budget is 50k). With the pinned models that's roughly **a few US cents per run**. The exact figure (using the price table in `lib/config.ts`) is shown in the run-stats bar.
+- **Cost:** a Mode 2 run is typically well under ~25k tokens (target budget is 60k). With the pinned models that's roughly **a few US cents per run**. The exact figure (using the price table in `lib/config.ts`) is shown in the run-stats bar.
 - **Time cap:** a run is hard-capped at **180 seconds** wall-clock. If it approaches the cap or the token budget, the agent is forced to `finish` gracefully with partial-but-valid results.
 - **Jina Reader:** scraping uses the free `https://r.jina.ai/{url}` endpoint. It can be rate-limited or occasionally slow/unavailable; the gateway retries, times out (15s), and trips a circuit breaker, after which the agent works with whatever it already indexed.
 - **In-memory state (single process):** the cache, retrieval index, rate-limiter/circuit-breaker counters, and the `SenderProfile` store all live in memory. This is intentional ("local is fine") but means you must run a **single long-lived process** (`next start`, not edge/serverless) for cross-request reuse. Restarting clears everything.

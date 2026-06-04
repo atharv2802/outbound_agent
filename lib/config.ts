@@ -53,7 +53,7 @@ export const config = {
   },
 
   run: {
-    tokenBudget: envInt("TOKEN_BUDGET", 50_000),
+    tokenBudget: envInt("TOKEN_BUDGET", 60_000),
     /** When fewer than this many tokens remain, the agent is forced to finish. */
     finishThreshold: 2_000,
     wallClockMs: envInt("RUN_TIMEOUT_MS", 180_000),

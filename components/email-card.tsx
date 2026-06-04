@@ -40,6 +40,97 @@ function computeRanges(body: string, claims: Email["claims"]): Range[] {
   return merged;
 }
 
+function splitParagraphs(body: string): string[] {
+  if (/\n\n/.test(body)) {
+    return body.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  }
+  const sentences = body.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length <= 1) return [body.trim()];
+  if (sentences.length === 2) return sentences;
+  return [sentences[0], sentences.slice(1, -1).join(" "), sentences[sentences.length - 1]];
+}
+
+function buildClaimSegments(
+  text: string,
+  ranges: Range[],
+  highlightedClaimId: string | null | undefined,
+  onClaimActivate: (claimId: string) => void,
+  onClaimHover: (claimId: string | null) => void,
+): React.ReactNode[] {
+  const segments: React.ReactNode[] = [];
+  let cursor = 0;
+  ranges.forEach((r, i) => {
+    if (r.start > cursor) segments.push(text.slice(cursor, r.start));
+    const claimText = text.slice(r.start, r.end);
+    segments.push(
+      <button
+        key={`c-${i}`}
+        type="button"
+        onClick={() => onClaimActivate(r.claimId)}
+        onMouseEnter={() => onClaimHover(r.claimId)}
+        onMouseLeave={() => onClaimHover(null)}
+        className={cn(
+          "rounded px-0.5 underline decoration-dotted decoration-accent/60 underline-offset-[3px] transition-colors",
+          highlightedClaimId === r.claimId
+            ? "bg-accent/30 text-slate-900"
+            : "bg-accent/10 hover:bg-accent/20",
+        )}
+      >
+        {claimText}
+      </button>,
+    );
+    cursor = r.end;
+  });
+  if (cursor < text.length) segments.push(text.slice(cursor));
+  return segments;
+}
+
+function EmailBody({
+  body,
+  ranges,
+  highlightedClaimId,
+  onClaimActivate,
+  onClaimHover,
+}: {
+  body: string;
+  ranges: Range[];
+  highlightedClaimId?: string | null;
+  onClaimActivate: (claimId: string) => void;
+  onClaimHover: (claimId: string | null) => void;
+}) {
+  const paragraphs = splitParagraphs(body);
+  let searchFrom = 0;
+
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((para, i) => {
+        const start = body.indexOf(para, searchFrom);
+        const offset = start >= 0 ? start : searchFrom;
+        searchFrom = offset + para.length;
+        while (body[searchFrom] === "\n") searchFrom += 1;
+
+        const paraRanges = ranges
+          .filter((r) => r.start >= offset && r.start < offset + para.length)
+          .map((r) => ({ ...r, start: r.start - offset, end: r.end - offset }));
+
+        const isCta = i === paragraphs.length - 1 && paragraphs.length > 1;
+
+        return (
+          <p
+            key={i}
+            className={cn(
+              "text-[15px] leading-[1.8] text-slate-700",
+              isCta && "text-slate-800",
+            )}
+          >
+            {buildClaimSegments(para, paraRanges, highlightedClaimId, onClaimActivate, onClaimHover)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export function EmailCard({
   email,
   highlightedClaimId,
@@ -53,31 +144,6 @@ export function EmailCard({
 }) {
   const [copied, setCopied] = useState(false);
   const ranges = computeRanges(email.body, email.claims);
-
-  const segments: React.ReactNode[] = [];
-  let cursor = 0;
-  ranges.forEach((r, i) => {
-    if (r.start > cursor) segments.push(email.body.slice(cursor, r.start));
-    const text = email.body.slice(r.start, r.end);
-    segments.push(
-      <button
-        key={`c-${i}`}
-        onClick={() => onClaimActivate(r.claimId)}
-        onMouseEnter={() => onClaimHover(r.claimId)}
-        onMouseLeave={() => onClaimHover(null)}
-        className={cn(
-          "rounded px-0.5 underline decoration-dotted decoration-accent/60 underline-offset-2 transition-colors",
-          highlightedClaimId === r.claimId
-            ? "bg-accent/30 text-slate-900"
-            : "bg-accent/10 hover:bg-accent/20",
-        )}
-      >
-        {text}
-      </button>,
-    );
-    cursor = r.end;
-  });
-  if (cursor < email.body.length) segments.push(email.body.slice(cursor));
 
   const copy = () => {
     navigator.clipboard?.writeText(`Subject: ${email.subject}\n\n${email.body}`);
@@ -110,13 +176,24 @@ export function EmailCard({
         </div>
       </div>
 
-      {/* Light "email client" surface on the dark bg */}
-      <div className="m-3 rounded bg-[#F7F7F8] p-4 text-slate-800">
-        <p className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">
-          To: {email.persona.role} · {email.persona.seniority}
-        </p>
-        <p className="mb-3 font-semibold text-slate-900">{email.subject}</p>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{segments}</p>
+      <div className="m-4 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200/80">
+        <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-2.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            To · {email.persona.role} · {email.persona.seniority}
+          </p>
+        </div>
+        <div className="px-5 py-5">
+          <p className="mb-5 border-b border-slate-100 pb-4 text-[17px] font-semibold leading-snug tracking-tight text-slate-900">
+            {email.subject}
+          </p>
+          <EmailBody
+            body={email.body}
+            ranges={ranges}
+            highlightedClaimId={highlightedClaimId}
+            onClaimActivate={onClaimActivate}
+            onClaimHover={onClaimHover}
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-3 px-4 pb-3 text-[11px] text-ink-faint">

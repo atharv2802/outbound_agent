@@ -463,7 +463,17 @@ function finalizeEmailBody(input: {
     input.concreteHooks,
     input.persona,
   );
-  return body.trim();
+  return formatEmailParagraphs(body.trim());
+}
+
+/** Hook · value · CTA — blank lines for readable copy/paste and UI paragraph breaks. */
+export function formatEmailParagraphs(body: string): string {
+  const sentences = body.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length <= 1) return body.trim();
+  if (sentences.length === 2) return sentences.join("\n\n");
+  return [sentences[0], sentences.slice(1, -1).join(" "), sentences[sentences.length - 1]].join(
+    "\n\n",
+  );
 }
 
 function personalizeOpening(body: string, persona: Persona, companyName: string): string {
